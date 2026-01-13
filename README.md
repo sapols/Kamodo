@@ -61,7 +61,13 @@ Kamodo is built to run with at least 16 GB of RAM. Attempting to run Kamodo with
 > python -m pip install --upgrade spacepy  
 > python -m pip install hapiclient    
 
-- Download CCMC Kamodo to the current directory:
+- Install from PyPI:
+
+> python -m pip install kamodo-ccmc
+
+If a platform wheel is not available, pip will build from source and requires a C/Fortran compiler toolchain.
+
+- Or download CCMC Kamodo to the current directory:
 
 > git clone https://github.com/nasa/Kamodo.git
 

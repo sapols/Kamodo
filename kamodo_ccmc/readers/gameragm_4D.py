@@ -65,8 +65,8 @@ def MODEL():
     import kamodo_ccmc.readers.reader_utilities as RU
     import kamodo_ccmc.readers.gameragm_grids as G
 
-    from readers.Tri2D._interpolate_tri2d import ffi as tri2d_ffi
-    from readers.Tri2D._interpolate_tri2d import lib as tri2d_lib
+    from .Tri2D._interpolate_tri2d import ffi as tri2d_ffi
+    from .Tri2D._interpolate_tri2d import lib as tri2d_lib
     
     class MODEL(Kamodo):
         '''GAMERA GM model data reader.

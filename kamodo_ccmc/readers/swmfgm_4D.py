@@ -116,8 +116,8 @@ def MODEL():
     from time import perf_counter
     import kamodo_ccmc.readers.reader_utilities as RU
 
-    from readers.OCTREE_BLOCK_GRID._interpolate_amrdata import ffi
-    from readers.OCTREE_BLOCK_GRID._interpolate_amrdata import lib
+    from .OCTREE_BLOCK_GRID._interpolate_amrdata import ffi
+    from .OCTREE_BLOCK_GRID._interpolate_amrdata import lib
 
     class MODEL(Kamodo):
         '''SWMF model data reader for magnetosphere outputs.

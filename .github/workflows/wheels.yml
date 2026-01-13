@@ -1,0 +1,35 @@
+name: Build wheels
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build cibuildwheel
+      - name: Build wheels
+        env:
+          CIBW_BUILD: "cp310-* cp311-* cp312-*"
+          CIBW_SKIP: "*-musllinux_*"
+          CIBW_BEFORE_ALL_LINUX: "yum install -y gcc gcc-gfortran"
+          CIBW_BEFORE_ALL_MACOS: "brew install gcc"
+        run: python -m cibuildwheel --output-dir dist
+      - name: Build sdist
+        run: python -m build -s
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: dist/*

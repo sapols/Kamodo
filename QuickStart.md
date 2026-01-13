@@ -6,14 +6,19 @@ In your Python environment:
 Note that Anaconda, MiniConda, etc. are not free for all to use, unfortunately. We recommend using [Micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html) instead. Just replace 'conda' with 'micromamba' in the commands below.
 > conda create -n Kamodo_env python=3.10  
 > conda activate Kamodo_env  
-2. Install Kamodo from pip (without SWMF-GM): Note this is currently out of date, use step 3.
+2. Install Kamodo from pip:
 > python -m pip install kamodo-ccmc  
+If a platform wheel is not available, pip will build from source and requires a C/Fortran compiler toolchain.
 3. Or you can download the latest Kamodo to the current directory and build: 
 > git clone https://github.com/nasa/Kamodo.git  
 > python -m pip install ./Kamodo
-4. To build the SWMF-GM reader from the git clone (currently requires an editable pip install):  
+4. To rebuild native readers manually from the git clone:
 > cd ./Kamodo/kamodo_ccmc/readers/OCTREE_BLOCK_GRID  
 > python interpolate_amrdata_extension_build.py  
+> cd ../Tri2D  
+> python interpolate_tri2d_extension_build.py  
+> cd ../OpenGGCM  
+> python -m numpy.f2py -c -m readOpenGGCM read_b_grids.f readmagfile3d.f  
 > cd ../../../..  
 > python -m pip install -e ./Kamodo
 5. To work with Kamodo you may also need iPython and/or Jupyter notebooks.  

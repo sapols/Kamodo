@@ -13,8 +13,8 @@ import scipy.interpolate as spint
 import scipy.spatial.qhull as qhull
 
 from kamodo import Kamodo, kamodofy, gridify,pointlike
-from readers.OCTREE_BLOCK_GRID._interpolate_amrdata import ffi as OCTREE_BLOCK_GRID_FFI
-from readers.OCTREE_BLOCK_GRID._interpolate_amrdata import lib as OCTREE_BLOCK_GRID_LIB
+from .OCTREE_BLOCK_GRID._interpolate_amrdata import ffi as OCTREE_BLOCK_GRID_FFI
+from .OCTREE_BLOCK_GRID._interpolate_amrdata import lib as OCTREE_BLOCK_GRID_LIB
 
 import time
 import glob
@@ -391,8 +391,8 @@ class SWMF_GM(Kamodo):
         #//IDL_LONG *v_indices,
         #                           float *flx, float *fly, float *flz, IDL_LONG *step_max,
         #                           float dn, float bdp, float *tilt, float spherical_deg2rad);
-        from readers.OCTREE_BLOCK_GRID._interpolate_amrdata import ffi as OCTREE_BLOCK_GRID_FFI
-        from readers.OCTREE_BLOCK_GRID._interpolate_amrdata import lib as OCTREE_BLOCK_GRID_LIB
+        from .OCTREE_BLOCK_GRID._interpolate_amrdata import ffi as OCTREE_BLOCK_GRID_FFI
+        from .OCTREE_BLOCK_GRID._interpolate_amrdata import lib as OCTREE_BLOCK_GRID_LIB
 
         flx0=OCTREE_BLOCK_GRID_FFI.new("float[]",max_step)
         fly0=OCTREE_BLOCK_GRID_FFI.new("float[]",max_step)
