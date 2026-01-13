@@ -7,4 +7,9 @@ import kamodo # get installed kamodo
 from kamodo.kamodo import Kamodo
 
 import readers
+import tools
 import flythrough
+import filedriver
+
+__version__ = '23.3.2'
+

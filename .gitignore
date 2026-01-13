@@ -1,3 +1,6 @@
+#worklogs
+worklogs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -8,6 +11,12 @@ __pycache__/
 # Compilation outputs
 *.o
 *.mod
+
+# cffi C sources written during compilation of shared library)
+_*.c
+
+# Emacs editor backup files
+*~
 
 # Distribution / packaging
 .Python
@@ -102,6 +111,8 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/Validation
+RealFlightExample*html
 
 # mypy
 .mypy_cache/
@@ -116,4 +127,8 @@ hourly-outputs/
 
 # kamodo
 kamodo_output/
+KAMODO_DATA
+
+# MacOS
+.DS_Store
 
