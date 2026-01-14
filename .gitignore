@@ -96,6 +96,8 @@ celerybeat-schedule
 # Environments
 .env
 .venv
+.conda-py311/
+.conda-pkgs/
 env/
 venv/
 ENV/
@@ -120,6 +122,7 @@ RealFlightExample*html
 # command line outputs
 cli/outputs/
 outputs/
+dist_release/
 
 # hourly
 hourly.yaml
@@ -131,4 +134,3 @@ KAMODO_DATA
 
 # MacOS
 .DS_Store
-

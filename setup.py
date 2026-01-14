@@ -6,7 +6,9 @@ import sys
 import warnings
 
 from setuptools import Extension, setup
+from setuptools.command.build import build as _build
 from setuptools.command.build_ext import build_ext as _build_ext
+from setuptools.command.build_py import build_py as _build_py
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 KAMODO_RELEASE = os.environ.get("KAMODO_RELEASE", "").lower() in {"1", "true", "yes"}
@@ -28,6 +30,20 @@ class build_ext(_build_ext):
             return
 
         self._build_native_extensions()
+        self._bundle_runtime_libs()
+
+    def _bundle_runtime_libs(self):
+        if sys.platform == "darwin":
+            outdir = os.path.join(os.path.abspath(self.build_lib), "kamodo_ccmc")
+            libs = _copy_macos_fortran_libs(outdir, strict=KAMODO_RELEASE)
+            self._outputs.extend(libs)
+            for output in self._outputs:
+                if output.endswith(".so"):
+                    _add_macos_rpath(output, strict=KAMODO_RELEASE)
+        elif sys.platform == "win32":
+            outdir = os.path.join(os.path.abspath(self.build_lib), "kamodo_ccmc")
+            libs = _copy_windows_fortran_libs(outdir, strict=KAMODO_RELEASE)
+            self._outputs.extend(libs)
 
     def _build_native_extensions(self):
         self._try_build(
@@ -97,12 +113,128 @@ class build_ext(_build_ext):
 
     def _run(self, cmd, cwd):
         env = os.environ.copy()
-        env.setdefault("SETUPTOOLS_USE_DISTUTILS", "stdlib")
+        if "SETUPTOOLS_USE_DISTUTILS" not in env:
+            if sys.version_info >= (3, 12):
+                env["SETUPTOOLS_USE_DISTUTILS"] = "local"
+            else:
+                env["SETUPTOOLS_USE_DISTUTILS"] = "stdlib"
         subprocess.check_call(cmd, cwd=cwd, env=env)
+
+    def get_outputs(self):
+        outputs = super().get_outputs() or []
+        outputs.extend(self._outputs)
+        return outputs
+
+
+class build(_build):
+    sub_commands = [
+        ("build_ext", _build.has_ext_modules),
+        ("build_py", _build.has_pure_modules),
+        ("build_clib", _build.has_c_libraries),
+        ("build_scripts", _build.has_scripts),
+    ]
+
+
+class build_py(_build_py):
+    def run(self):
+        if not self.distribution.have_run.get("build_ext"):
+            self.run_command("build_ext")
+        _clean_source_artifacts()
+        super().run()
+        build_ext_cmd = self.get_finalized_command("build_ext")
+        outputs = list(getattr(self, "_outputs", []))
+        for output in getattr(build_ext_cmd, "_outputs", []):
+            if output not in outputs:
+                outputs.append(output)
+        self._outputs = outputs
+
+
+def _copy_macos_fortran_libs(outdir, strict):
+    libnames = ["libgfortran", "libquadmath", "libgcc_s.1", "libgcc_s.1.1"]
+    outlibdir = os.path.join(outdir, "libs")
+    os.makedirs(outlibdir, exist_ok=True)
+    outputs = []
+    for lib in libnames:
+        proc = subprocess.run(
+            ["gfortran", f"--print-file-name={lib}.dylib"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if proc.returncode != 0:
+            if strict:
+                raise RuntimeError(f"Failed locating {lib}.dylib via gfortran.")
+            warnings.warn(f"Skipping missing {lib}.dylib (gfortran not available).")
+            continue
+        libpath = proc.stdout.strip()
+        if not os.path.isfile(libpath):
+            if lib.startswith("libgcc_s"):
+                continue
+            if strict:
+                raise RuntimeError(f"Required runtime library not found: {libpath}")
+            warnings.warn(f"Skipping missing {lib}.dylib at {libpath}.")
+            continue
+        libpath = os.path.realpath(libpath)
+        dest = os.path.join(outlibdir, os.path.basename(libpath))
+        shutil.copy2(libpath, dest)
+        outputs.append(dest)
+    return outputs
+
+
+def _clean_source_artifacts():
+    for root, _, files in os.walk(os.path.join(ROOT, "kamodo_ccmc", "readers")):
+        for filename in files:
+            if filename.endswith((".o", ".so")):
+                try:
+                    os.remove(os.path.join(root, filename))
+                except OSError:
+                    pass
+
+
+def _add_macos_rpath(path, strict):
+    cmd = ["install_name_tool", "-add_rpath", "@loader_path/../libs", path]
+    try:
+        subprocess.check_call(cmd)
+    except (OSError, subprocess.CalledProcessError) as exc:
+        if strict:
+            raise RuntimeError(f"Failed adding rpath to {path}.") from exc
+        warnings.warn(f"Failed adding rpath to {path}; runtime libs may not load.")
+
+
+def _copy_windows_fortran_libs(outdir, strict):
+    outputs = []
+    libneeded = ("libgfortran", "libgcc_s", "libquadmath")
+    liboptional = ("libwinpthread",)
+    libdir = None
+    libnames = None
+    for p in os.environ.get("PATH", "").split(os.pathsep):
+        if not os.path.isdir(p):
+            continue
+        candidates = [
+            f for f in os.listdir(p)
+            if f.lower().endswith(".dll") and f.startswith(libneeded + liboptional)
+        ]
+        if len([f for f in candidates if f.startswith(libneeded)]) == len(libneeded):
+            libdir = p
+            libnames = candidates
+            break
+    if libdir is None:
+        if strict:
+            raise RuntimeError("Could not locate Fortran runtime DLLs on PATH.")
+        warnings.warn("Fortran runtime DLLs not found; Windows wheels may be incomplete.")
+        return outputs
+    outlibdir = os.path.join(outdir, "libs")
+    os.makedirs(outlibdir, exist_ok=True)
+    for f in libnames:
+        src = os.path.join(libdir, f)
+        dest = os.path.join(outlibdir, f)
+        shutil.copy2(src, dest)
+        outputs.append(dest)
+    return outputs
 
 
 if __name__ == "__main__":
     setup(
         ext_modules=[Extension("kamodo_ccmc._native", sources=[])],
-        cmdclass={"build_ext": build_ext},
+        cmdclass={"build": build, "build_ext": build_ext, "build_py": build_py},
     )
