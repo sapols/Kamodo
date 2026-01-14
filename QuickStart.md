@@ -9,6 +9,8 @@ Note that Anaconda, MiniConda, etc. are not free for all to use, unfortunately. 
 2. Install Kamodo from pip:
 > python -m pip install kamodo-ccmc  
 If a platform wheel is not available, pip will build from source and requires a C/Fortran compiler toolchain.
+If building from source in a conda environment and the OpenGGCM build fails, try:
+> SETUPTOOLS_USE_DISTUTILS=stdlib python -m pip install kamodo-ccmc
 3. Or you can download the latest Kamodo to the current directory and build: 
 > git clone https://github.com/nasa/Kamodo.git  
 > python -m pip install ./Kamodo
