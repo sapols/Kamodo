@@ -11,10 +11,20 @@ import pandas as pd
 
 import scipy.interpolate as spint
 import scipy.spatial.qhull as qhull
+import warnings
 
 from kamodo import Kamodo, kamodofy, gridify,pointlike
-from .OCTREE_BLOCK_GRID._interpolate_amrdata import ffi as OCTREE_BLOCK_GRID_FFI
-from .OCTREE_BLOCK_GRID._interpolate_amrdata import lib as OCTREE_BLOCK_GRID_LIB
+try:
+    from .OCTREE_BLOCK_GRID._interpolate_amrdata import ffi as OCTREE_BLOCK_GRID_FFI
+    from .OCTREE_BLOCK_GRID._interpolate_amrdata import lib as OCTREE_BLOCK_GRID_LIB
+    OCTREE_AVAILABLE = True
+except ImportError as exc:
+    OCTREE_AVAILABLE = False
+    warnings.warn(
+        "SWMF-GM octree reader unavailable: OCTREE_BLOCK_GRID C extension "
+        "not compiled. Install a C compiler and reinstall kamodo-ccmc to "
+        f"enable it. (ImportError: {exc})"
+    )
 
 import time
 import glob
@@ -33,6 +43,12 @@ class SWMF_GM(Kamodo):
                  setup_interpolators=True,
                  variables_requested = None,
                  **kwargs):
+        if not OCTREE_AVAILABLE:
+            raise ImportError(
+                "SWMF_GM reader requires the OCTREE_BLOCK_GRID C extension, "
+                "which is not compiled. Install a C compiler and reinstall "
+                "kamodo-ccmc to enable it."
+            )
         # Start timer
         tic = time.perf_counter()
 
@@ -391,9 +407,6 @@ class SWMF_GM(Kamodo):
         #//IDL_LONG *v_indices,
         #                           float *flx, float *fly, float *flz, IDL_LONG *step_max,
         #                           float dn, float bdp, float *tilt, float spherical_deg2rad);
-        from .OCTREE_BLOCK_GRID._interpolate_amrdata import ffi as OCTREE_BLOCK_GRID_FFI
-        from .OCTREE_BLOCK_GRID._interpolate_amrdata import lib as OCTREE_BLOCK_GRID_LIB
-
         flx0=OCTREE_BLOCK_GRID_FFI.new("float[]",max_step)
         fly0=OCTREE_BLOCK_GRID_FFI.new("float[]",max_step)
         flz0=OCTREE_BLOCK_GRID_FFI.new("float[]",max_step)

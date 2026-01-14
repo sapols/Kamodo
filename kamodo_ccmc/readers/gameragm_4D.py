@@ -64,9 +64,19 @@ def MODEL():
     from time import perf_counter
     import kamodo_ccmc.readers.reader_utilities as RU
     import kamodo_ccmc.readers.gameragm_grids as G
+    import warnings
 
-    from .Tri2D._interpolate_tri2d import ffi as tri2d_ffi
-    from .Tri2D._interpolate_tri2d import lib as tri2d_lib
+    try:
+        from .Tri2D._interpolate_tri2d import ffi as tri2d_ffi
+        from .Tri2D._interpolate_tri2d import lib as tri2d_lib
+        TRI2D_AVAILABLE = True
+    except ImportError as exc:
+        TRI2D_AVAILABLE = False
+        warnings.warn(
+            "GAMER-AM reader unavailable: Tri2D C extension not compiled. "
+            "Install a C compiler and reinstall kamodo-ccmc to enable it. "
+            f"(ImportError: {exc})"
+        )
     
     class MODEL(Kamodo):
         '''GAMERA GM model data reader.
@@ -125,6 +135,12 @@ def MODEL():
         def __init__(self, file_dir, variables_requested=[],
                      printfiles=False, filetime=False, gridded_int=True,
                      verbose=False, **kwargs):
+            if not TRI2D_AVAILABLE:
+                raise ImportError(
+                    "GAMER-AM reader requires the Tri2D C extension, which is "
+                    "not compiled. Install a C compiler and reinstall "
+                    "kamodo-ccmc to enable it."
+                )
             super(MODEL, self).__init__(**kwargs)
             self.modelname = 'GAMERA_GM'
             t0 = perf_counter()

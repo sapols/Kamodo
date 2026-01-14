@@ -115,9 +115,19 @@ def MODEL():
     from numpy import min, max, floor, log
     from time import perf_counter
     import kamodo_ccmc.readers.reader_utilities as RU
+    import warnings
 
-    from .OCTREE_BLOCK_GRID._interpolate_amrdata import ffi
-    from .OCTREE_BLOCK_GRID._interpolate_amrdata import lib
+    try:
+        from .OCTREE_BLOCK_GRID._interpolate_amrdata import ffi
+        from .OCTREE_BLOCK_GRID._interpolate_amrdata import lib
+        OCTREE_AVAILABLE = True
+    except ImportError as exc:
+        OCTREE_AVAILABLE = False
+        warnings.warn(
+            "SWMF-GM reader unavailable: OCTREE_BLOCK_GRID C extension "
+            "not compiled. Install a C compiler and reinstall kamodo-ccmc to "
+            f"enable it. (ImportError: {exc})"
+        )
 
     class MODEL(Kamodo):
         '''SWMF model data reader for magnetosphere outputs.
@@ -172,6 +182,12 @@ def MODEL():
         def __init__(self, file_dir, variables_requested=[],
                      filetime=False, verbose=False, gridded_int=True,
                      printfiles=False, use_nearest_time=False, **kwargs):
+            if not OCTREE_AVAILABLE:
+                raise ImportError(
+                    "SWMF-GM reader requires the OCTREE_BLOCK_GRID C "
+                    "extension, which is not compiled. Install a C compiler "
+                    "and reinstall kamodo-ccmc to enable it."
+                )
             super(MODEL, self).__init__(**kwargs)
             self.modelname = 'SWMF_GM'
             self.use_nearest_time = use_nearest_time

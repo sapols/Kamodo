@@ -1,5 +1,14 @@
 import os
 from cffi import FFI
+
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _rel_path(filename):
+    """Return a path relative to the current working directory."""
+    return os.path.relpath(os.path.join(_THIS_DIR, filename))
+
+
 ffibuilder = FFI()
 
 ffibuilder.cdef("""
@@ -57,12 +66,25 @@ ffibuilder.set_source("_interpolate_tri2d",  # name of the output C extension
     }
 
 """,
-    sources=['interpolate_tri2d_plus_1d.c',
-             'setup_tri.c','find_tri.c','hunt.c'],
+    sources=[
+        _rel_path('interpolate_tri2d_plus_1d.c'),
+        _rel_path('setup_tri.c'),
+        _rel_path('find_tri.c'),
+        _rel_path('hunt.c'),
+    ],
+    include_dirs=[_THIS_DIR],
     libraries=libraries)
 
-if __name__ == "__main__":
-    ffibuilder.compile(verbose=True,debug=False)
-    #ffibuilder.compile(verbose=True)
-    #ffibuilder.compile()
 
+def build_extension():
+    """Build the Tri2D C extension."""
+    try:
+        ffibuilder.compile(verbose=True, debug=False)
+        return True
+    except Exception as exc:
+        print(f"ERROR: Tri2D compilation failed: {exc}")
+        return False
+
+if __name__ == "__main__":
+    if not build_extension():
+        raise SystemExit(1)

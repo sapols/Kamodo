@@ -1,5 +1,14 @@
 import os
 from cffi import FFI
+
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _rel_path(filename):
+    """Return a path relative to the current working directory."""
+    return os.path.relpath(os.path.join(_THIS_DIR, filename))
+
+
 ffibuilder = FFI()
 
 ffibuilder.cdef("""
@@ -225,12 +234,29 @@ if (NZ==1){return(-6);}
     }
 
 """,
-    sources=['interpolate_amrdata.c', 'setup_parent.c', 'setup_octree.c', 'interpolate_in_block.c',
-             'find_octree_block.c','find_in_block.c','find_block.c','trace_fieldline.c'],
+    sources=[
+        _rel_path('interpolate_amrdata.c'),
+        _rel_path('setup_parent.c'),
+        _rel_path('setup_octree.c'),
+        _rel_path('interpolate_in_block.c'),
+        _rel_path('find_octree_block.c'),
+        _rel_path('find_in_block.c'),
+        _rel_path('find_block.c'),
+        _rel_path('trace_fieldline.c'),
+    ],
+    include_dirs=[_THIS_DIR],
     libraries=libraries)
 
-if __name__ == "__main__":
-    ffibuilder.compile(verbose=True,debug=False)
-    #ffibuilder.compile(verbose=True)
-    #ffibuilder.compile()
 
+def build_extension():
+    """Build the OCTREE_BLOCK_GRID C extension."""
+    try:
+        ffibuilder.compile(verbose=True, debug=False)
+        return True
+    except Exception as exc:
+        print(f"ERROR: OCTREE_BLOCK_GRID compilation failed: {exc}")
+        return False
+
+if __name__ == "__main__":
+    if not build_extension():
+        raise SystemExit(1)

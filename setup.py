@@ -5,7 +5,7 @@ import subprocess
 import sys
 import warnings
 
-from setuptools import Extension, setup
+from setuptools import setup
 from setuptools.command.build import build as _build
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.build_py import build_py as _build_py
@@ -128,7 +128,7 @@ class build_ext(_build_ext):
 
 class build(_build):
     sub_commands = [
-        ("build_ext", _build.has_ext_modules),
+        ("build_ext", lambda self: True),
         ("build_py", _build.has_pure_modules),
         ("build_clib", _build.has_c_libraries),
         ("build_scripts", _build.has_scripts),
@@ -139,9 +139,13 @@ class build_py(_build_py):
     def run(self):
         if not self.distribution.have_run.get("build_ext"):
             self.run_command("build_ext")
-        _clean_source_artifacts()
-        super().run()
         build_ext_cmd = self.get_finalized_command("build_ext")
+        editable = getattr(build_ext_cmd, "editable_mode", False) or getattr(
+            build_ext_cmd, "inplace", False
+        )
+        if not editable:
+            _clean_source_artifacts()
+        super().run()
         outputs = list(getattr(self, "_outputs", []))
         for output in getattr(build_ext_cmd, "_outputs", []):
             if output not in outputs:
@@ -210,13 +214,21 @@ def _copy_windows_fortran_libs(outdir, strict):
     for p in os.environ.get("PATH", "").split(os.pathsep):
         if not os.path.isdir(p):
             continue
-        candidates = [
-            f for f in os.listdir(p)
-            if f.lower().endswith(".dll") and f.startswith(libneeded + liboptional)
-        ]
-        if len([f for f in candidates if f.startswith(libneeded)]) == len(libneeded):
+        entries = sorted(
+            f for f in os.listdir(p) if f.lower().endswith(".dll")
+        )
+        needed = {}
+        for prefix in libneeded:
+            for f in entries:
+                if f.lower().startswith(prefix):
+                    needed[prefix] = f
+                    break
+        if len(needed) == len(libneeded):
             libdir = p
-            libnames = candidates
+            libnames = list(needed.values())
+            for f in entries:
+                if f.lower().startswith(liboptional):
+                    libnames.append(f)
             break
     if libdir is None:
         if strict:
@@ -234,7 +246,4 @@ def _copy_windows_fortran_libs(outdir, strict):
 
 
 if __name__ == "__main__":
-    setup(
-        ext_modules=[Extension("kamodo_ccmc._native", sources=[])],
-        cmdclass={"build": build, "build_ext": build_ext, "build_py": build_py},
-    )
+    setup(cmdclass={"build": build, "build_ext": build_ext, "build_py": build_py})

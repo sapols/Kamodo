@@ -10,7 +10,17 @@ from numpy import zeros, flip,array,float32,NaN
 from glob import glob
 #import kamodo_ccmc.readers.OpenGGCM.read_b_grids as rbg
 #import kamodo_ccmc.readers.OpenGGCM.readmagfile3d as rmhd
-import kamodo_ccmc.readers.OpenGGCM.readOpenGGCM as ropgm
+try:
+    import kamodo_ccmc.readers.OpenGGCM.readOpenGGCM as ropgm
+    OPENGGCM_AVAILABLE = True
+except ImportError as exc:
+    OPENGGCM_AVAILABLE = False
+    import warnings
+    warnings.warn(
+        "OpenGGCM reader unavailable: OpenGGCM Fortran extension not "
+        "compiled. Install a Fortran compiler and reinstall kamodo-ccmc to "
+        f"enable it. (ImportError: {exc})"
+    )
 
 from os.path import sep,isfile,isdir,dirname,exists
 from os import remove
@@ -63,6 +73,12 @@ openggcm_gm_varnames={
 
 
 def openggcm_combine_magnetosphere_files(full_file_prefix,cadence=None,requested_variables=None,verbose=False):
+    if not OPENGGCM_AVAILABLE:
+        raise ImportError(
+            "OpenGGCM reader requires the readOpenGGCM Fortran extension, "
+            "which is not compiled. Install a Fortran compiler and reinstall "
+            "kamodo-ccmc to enable it."
+        )
     # file prefix includes everything including '3df' for magnetosphere and intended year,month,day (and hour)
     # read matching dates, times from 3df_list to generate list of raw files.
     # coadence: Default: None -- use all available times, otherwise use cadence as input starting with first time in simualtion.
@@ -481,4 +497,3 @@ def openggcm_combine_magnetosphere_files(full_file_prefix,cadence=None,requested
     toc=perf_counter()
     print('converted files in ',toc-tic,' seconds')                       
     return True
-
