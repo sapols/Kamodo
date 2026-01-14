@@ -78,7 +78,9 @@ class build_py(_build_py):
         shutil.copy2(built, dest_dir)
 
     def _run(self, cmd, cwd):
-        subprocess.check_call(cmd, cwd=cwd)
+        env = os.environ.copy()
+        env.setdefault("SETUPTOOLS_USE_DISTUTILS", "stdlib")
+        subprocess.check_call(cmd, cwd=cwd, env=env)
 
 
 if __name__ == "__main__":
