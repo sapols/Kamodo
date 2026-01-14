@@ -45,5 +45,7 @@ produce wheel artifacts.
 ## Notes
 - Set `KAMODO_SKIP_NATIVE=1` only for debugging; it skips building readers that
   depend on compiled extensions.
+- Set `KAMODO_RELEASE=1` for wheel builds that must fail if native extensions do
+  not compile, mirroring SpacePy's "release build" behavior.
 - This process is inspired by SpacePy's `DISTRIBUTE` guidance and the way
   SpacePy ships platform wheels for Fortran/C dependencies.
